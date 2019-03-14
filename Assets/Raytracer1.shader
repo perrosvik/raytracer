@@ -8,7 +8,7 @@
 // https://docs.unity3d.com/Manual/RenderDocIntegration.html
 // https://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 
-Shader "Unlit/SingleColor"
+Shader "Unlit/GreenRedGradient"
 {	
 	SubShader{ Pass	{
 
