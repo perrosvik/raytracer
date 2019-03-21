@@ -132,6 +132,7 @@ Shader "Unlit/Raytracer6"
 		hit_record temp_rec;
 		bool hit_anything = false;
 		float closest = tmax;
+
 		for (uint i = 0; i < NUMBER_OF_SPHERES; i++) {
 			sphere s = WORLD[i];
 			if (s.hit(r, tmin, closest, temp_rec)) {
@@ -143,6 +144,19 @@ Shader "Unlit/Raytracer6"
 
 		return hit_anything;
 	}
+	/*
+	float hit_sphere(sphere s, ray r)
+	{
+		vec3 oc = r.origin - s.center;
+		float a = dot(r.direction, r.direction);
+		float b = 2.0 * dot(oc, r.direction);
+		float c = dot(oc, oc) - s.radius * s.radius;
+		float discriminant = b * b - 4 * a*c;
+		if (discriminant < 0)
+			return -1.0;
+		else
+			return (-b - sqrt(discriminant)) / (2.0*a);
+	}; */
 
 	vec3 color(ray r)
 	{
