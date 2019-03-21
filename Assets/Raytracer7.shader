@@ -135,16 +135,19 @@ Shader "Unlit/Raytracer7"
 		}
 	};
 
+	static float rand_seed = 12.0;
+
 	float random_number(in float2 uv)
 	{
 		float2 noise = (frac(sin(dot(uv,float2(12.9898, 78.233)*2.0)) * 43758.5453));	
+		rand_seed += 0.21342;
 		return abs(noise.x + noise.y) * 0.5;
 	};
 
 	vec3 random_in_unit_sphere() {
 		vec3 p;
 		do {
-			p = 2.0 * vec3(random_number(uv.x * uv.y), random_number(uv.x * 2 * uv.y * 2), random_number(pow(uv.x,2) * pow(uv.y,2))) - vec3(1.0, 1.0, 1.0);
+			p = 2.0 * vec3(random_number(uv.x+rand_seed * uv.y+rand_seed), random_number(uv.x+rand_seed * 2 * uv.y+rand_seed * 2), random_number(pow(uv.x,2) + rand_seed * pow(uv.y,2)+rand_seed)) - vec3(1.0, 1.0, 1.0);
 		} while (dot(p, p) >= 1.0);
 		return p;
 	}
@@ -173,7 +176,7 @@ Shader "Unlit/Raytracer7"
 		hit_record rec;
 		vec3 accumColor = vec3(1.0, 1.0, 1.0);
 		uint i = 0;
-		while((hit_world(r, 0.001, 100000.0, rec)) && i < MAXIMUM_DEPTH)
+		while((hit_world(r, 0.001, 100000.0, rec)) && i <= MAXIMUM_DEPTH)
 		{
 			vec3 target = rec.p + rec.normal + random_in_unit_sphere();
 			r = ray::from(rec.p, target - rec.p);
