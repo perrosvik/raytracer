@@ -44,12 +44,21 @@ Shader "Unlit/Raytracer6"
 		vec3 normal;
 	};
 
-	class ray
+	struct ray
 	{
-		void make(vec3 orig, vec3 dir) { origin = orig; direction = dir; } // constructors not supported in hlsl
-		vec3 point_at_parameter(float t) { return origin + t * direction; }
-		vec3 origin; // access directly instead of via function
+		vec3 origin; 
 		vec3 direction;
+		static ray from(vec3 orig, vec3 dir)
+		{ 
+			ray r;
+			r.origin = orig;
+			r.direction = dir;
+			return r;
+		}
+		vec3 point_at_parameter(float t) 
+		{ 
+			return origin + t * direction; 
+		}
 	};
 
 	struct sphere
@@ -91,6 +100,28 @@ Shader "Unlit/Raytracer6"
 		}
 	};
 
+	struct camera 
+	{
+		vec3 origin;
+		vec3 lower_left_corner;
+		vec3 horizontal;
+		vec3 vertical;
+
+		static camera from() 
+		{
+			camera cam;
+			cam.origin = vec3(0.0, 0.0, 0.0);
+			cam.lower_left_corner = vec3(-2.0, -1.0, -1.0);
+			cam.horizontal = vec3(4.0, 0.0, 0.0);
+			cam.vertical = vec3(0.0, 2.0, 0.0);
+			return cam;
+		}
+
+		ray getRay(float u, float v)
+		{
+			return ray::from(origin, lower_left_corner + u * horizontal + v * vertical - origin);
+		}
+	};
 	static const uint NUMBER_OF_SPHERES = 2;
 	static const sphere WORLD[NUMBER_OF_SPHERES] = {
 		{ vec3(0.0, 0.0, -1.0), 0.5 },
@@ -154,8 +185,8 @@ Shader "Unlit/Raytracer6"
 		float u = i.uv.x;
 		float v = i.uv.y;
 
-		ray r;
-		r.make(origin, lower_left_corner + u * horizontal + v * vertical);
+		camera cam = camera::from();
+		ray r = cam.getRay(u, v);
 		col3 col = color(r);
 		return fixed4(col,1);
 	}
