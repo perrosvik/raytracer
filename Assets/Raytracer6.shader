@@ -9,7 +9,7 @@
 // https://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 
 
-Shader "Unlit/Raytracer5"
+Shader "Unlit/Raytracer6"
 {
 	SubShader{ Pass	{
 	CGPROGRAM
@@ -57,10 +57,10 @@ Shader "Unlit/Raytracer5"
 		vec3 center;
 		float radius;
 
-		static sphere from(vec3 co, float rad) 
-		{ 
+		static sphere from(vec3 co, float rad)
+		{
 			sphere s;
-			s.center = co, 
+			s.center = co,
 			s.radius = rad;
 			return s;
 		}
@@ -70,7 +70,7 @@ Shader "Unlit/Raytracer5"
 			float a = dot(r.direction, r.direction);
 			float b = dot(oc, r.direction);
 			float c = dot(oc, oc) - radius * radius;
-			float discriminant = b * b - a*c;
+			float discriminant = b * b - a * c;
 			if (discriminant > 0) {
 				float temp = (-b - sqrt(b*b - a * c)) / a;
 				if (temp < tmax && temp > tmin) {
@@ -130,11 +130,11 @@ Shader "Unlit/Raytracer5"
 	vec3 color(ray r)
 	{
 		hit_record rec;
-		
+
 		if (hit_world(r, 0.0, 100000.0, rec))
 		{
-			return 0.5 * vec3(rec.normal.x+1, rec.normal.y+1, rec.normal.z+1);
-		} 
+			return 0.5 * vec3(rec.normal.x + 1, rec.normal.y + 1, rec.normal.z + 1);
+		}
 		else
 		{
 			vec3 unit_direction = normalize(r.direction);
@@ -161,6 +161,6 @@ Shader "Unlit/Raytracer5"
 	}
 		////////////////////////////////////////////////////////////////////////////////////
 		ENDCG
-}}}
+} }}
 
 
