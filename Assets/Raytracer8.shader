@@ -9,7 +9,7 @@
 // https://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 
 
-Shader "Unlit/Raytracer7"
+Shader "Unlit/Raytracer8"
 {
 	SubShader{ Pass	{
 	CGPROGRAM
@@ -137,7 +137,7 @@ Shader "Unlit/Raytracer7"
 
 	float random_number(in float2 uv)
 	{
-		float2 noise = (frac(sin(dot(uv,float2(12.9898, 78.233)*2.0)) * 43758.5453));	
+		float2 noise = (frac(sin(dot(uv,float2(12.9898, 78.233)*2.0)) * 43758.5453));
 		return abs(noise.x + noise.y) * 0.5;
 	};
 
@@ -173,14 +173,14 @@ Shader "Unlit/Raytracer7"
 		hit_record rec;
 		vec3 accumColor = vec3(1.0, 1.0, 1.0);
 		uint i = 0;
-		while((hit_world(r, 0.001, 100000.0, rec)) && i < MAXIMUM_DEPTH)
+		while ((hit_world(r, 0.001, 100000.0, rec)) && i < MAXIMUM_DEPTH)
 		{
 			vec3 target = rec.p + rec.normal + random_in_unit_sphere();
 			r = ray::from(rec.p, target - rec.p);
 			accumColor *= 0.5;
 			i += 1;
 		}
-		
+
 		if (i == MAXIMUM_DEPTH)
 		{
 			return vec3(0.0, 0.0, 0.0);
@@ -215,8 +215,6 @@ Shader "Unlit/Raytracer7"
 		col = sqrt(col); // gamma correction
 		return fixed4(col,1);
 	}
-	////////////////////////////////////////////////////////////////////////////////////
-	ENDCG
-} }}
-
-
+		////////////////////////////////////////////////////////////////////////////////////
+		ENDCG
+	} }}
