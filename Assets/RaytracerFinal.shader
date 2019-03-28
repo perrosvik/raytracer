@@ -9,17 +9,18 @@
 // https://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 
 
-Shader "Unlit/RaytracerFinal"
+Shader "Unlit/Raytracer10"
 {
 	Properties
 	{
-		// inputs from gui, NB remember to also define them in "redeclaring" section
-		//[Toggle] _boolchooser("myBool", Range(0,1)) = 0  // [Toggle] creates a checkbox in gui and gives it 0 or 1
-		_rays_per_pixel("Rays per Pixel", Range(0,50)) = 0
-		_max_bounce("Max bounces", Range(0,50)) = 0
+		_rays_per_pixel("Rays per Pixel", Range(0, 50)) = 0
+		_max_bounce("Max bounces", Range(0, 50)) = 0
 		_camera_position("Camera position", Vector) = (0, 0, 0)
-		//_vec4chooser("myVec4", Vector) = (0,0,0,0)
-		//_texturechooser("myTexture", 2D) = "" {} // "" er for bildefil, {} er for options
+		_camera_look_at("Camera look at", Vector) = (0, 0, 0)
+		_sphere_position_x("Sphere position, x axis", Range(-10, 10)) = 0
+		[Toggle] _sphere_material("Toggle diffuse or glass", Range(0, 1)) = 0
+		_sphere_refraction_index("Refraction index", Range(0, 10)) = 1
+		_sphere_color("Color", Color) = (0, 0, 0) 
 	}
 	SubShader{ Pass	{
 	CGPROGRAM
@@ -32,10 +33,20 @@ Shader "Unlit/RaytracerFinal"
 	uint _rays_per_pixel;
 	uint _max_bounce;
 
+	vec3 _camera_position;
+	vec3 _camera_look_at;
+
+	float _sphere_position_x;
+	bool _sphere_material;
+	float _sphere_refraction_index;
+	vec3 _sphere_color;
+
+	static const float M_PI = 3.14159265f;
+
+	static const uint MAXIMUM_DEPTH = 20;
+	static const uint NUMBER_OF_SAMPLES = 25;
+
 	static float2 uv;
-
-
-
 
 	struct appdata
 	{
@@ -99,13 +110,36 @@ Shader "Unlit/RaytracerFinal"
 		return p;
 	}
 
+	float schlick(float cosine, float ref_idx)
+	{
+		float r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+		r0 = r0 * r0;
+		return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
+	}
+
+	bool refract(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted)
+	{
+		vec3 uv = normalize(v);
+		float dt = dot(uv, n);
+		float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1 - dt * dt);
+		if(discriminant > 0)
+		{
+			refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
+			return true;
+		}
+		else
+			return false;
+	}
+
 	struct sphere
 	{
 		vec3 center;
 		float radius;
 		bool metal;
+		bool dielectric;
 		vec3 albedo;
 		float fuzz;
+		float ref_idx;
 
 		bool hit(ray r, float tmin, float tmax, out hit_record rec) {
 			rec.index = 0;
@@ -142,6 +176,47 @@ Shader "Unlit/RaytracerFinal"
 				attenuation = albedo;
 				return (dot(scattered.direction, rec.normal) > 0);
 			}
+			if(dielectric)
+			{
+				vec3 outward_normal;
+				vec3 reflected = reflect(r_in.direction, rec.normal);
+				float ni_over_nt;
+				attenuation = vec3(1.0, 1.0, 1.0);
+				vec3 refracted;
+				float reflect_prob;
+				float cosine;
+				
+				if(dot(r_in.direction, rec.normal) > 0)
+				{
+					outward_normal = -rec.normal;
+					ni_over_nt = ref_idx;
+					cosine = ref_idx * dot(r_in.direction, rec.normal) / length(r_in.direction);
+				}
+				else
+				{
+					outward_normal = rec.normal;
+					ni_over_nt = 1.0 / ref_idx;
+					cosine = -dot(r_in.direction, rec.normal) / length(r_in.direction);
+				}
+				if(refract(r_in.direction, outward_normal, ni_over_nt, refracted))
+				{
+					reflect_prob = schlick(cosine, ref_idx);
+				}
+				else 
+				{
+					scattered = ray::from(rec.p, reflected);
+					reflect_prob = 1.0;
+				}
+				if(random_number(ref_idx) < reflect_prob)
+				{
+					scattered = ray::from(rec.p, reflected);
+				}
+				else
+				{
+					scattered = ray::from(rec.p, refracted);
+				}
+				return true;
+			}
 			else //diffuse
 			{
 				vec3 target = rec.p + rec.normal + random_in_unit_sphere();
@@ -152,12 +227,14 @@ Shader "Unlit/RaytracerFinal"
 		}
 	};
 
-	static const uint NUMBER_OF_SPHERES = 4;
+	static const uint NUMBER_OF_SPHERES = 5;
 	static const sphere WORLD[NUMBER_OF_SPHERES] = {
-		{ vec3(0.0, 0.0, -1.0), 0.5, false , vec3(0.8,0.3,0.3), 1.0},
-		{ vec3(0.0, -100.5, -1.0), 100.0, false , vec3(0.8, 0.8, 0.0), 1.0},
-		{ vec3(1.0, 0.0, -1.0), 0.5, true, vec3(0.8, 0.6, 0.2), 0.3},
-		{ vec3(-1.0, 0.0, -1.0), 0.5, true, vec3(0.8, 0.8, 0.8), 1.0}
+		{ vec3(_sphere_position_x, 0.0, -1.0), 0.5, false, _sphere_material, _sphere_color, 1.0, _sphere_refraction_index},
+		{ vec3(0.0, -100.5, -1.0), 100.0, false, false, vec3(0.6, 0.8, 0.2), 1.0, 0.0},
+		{ vec3(1.0, 0.0, -1.0), 0.5, true, false, vec3(0.9, 0.6, 1.0), 0.3, 0.0},
+		{ vec3(-1.0, 0.0, -1.0), 0.5, false, true, vec3(0.0, 0.0, 0.0), 1.0, 1.5},
+		{ vec3(-1.0, 0.0, -1.0), -0.45, false, true, vec3(0.0, 0.0, 0.0), 1.0, 1.5}
+		// Sphere format: { vec3 center, float radius, bool metal, bool dielectric, vec3 albedo, float fuzz, float ref_idx }
 	};
 
 	struct camera
@@ -167,16 +244,25 @@ Shader "Unlit/RaytracerFinal"
 		vec3 horizontal;
 		vec3 vertical;
 
-		static camera from()
+		static camera from(vec3 look_from, vec3 look_at, vec3 vup, float vfov, float aspect)
 		{
 			camera cam;
-			cam.origin = vec3(0.0, 0.0, 0.0);
-			cam.lower_left_corner = vec3(-2.0, -1.0, -1.0);
-			cam.horizontal = vec3(4.0, 0.0, 0.0);
-			cam.vertical = vec3(0.0, 2.0, 0.0);
+
+			float theta = vfov * M_PI/180;
+			float half_height = tan(theta/2);
+			float half_width = aspect * half_height;
+
+			vec3 w = normalize(look_from - look_at);
+			vec3 u = normalize(cross(vup, w));
+			vec3 v = cross(w, u);
+
+			cam.origin = look_from;
+			cam.lower_left_corner = vec3(-half_width, -half_height, -1.0);
+			cam.lower_left_corner = cam.origin - half_width * u - half_height * v - w;
+			cam.horizontal = 2 * half_width * u;
+			cam.vertical = 2 * half_height * v;
 			return cam;
 		}
-
 		ray getRay(float u, float v)
 		{
 			return ray::from(origin, lower_left_corner + u * horizontal + v * vertical - origin);
@@ -197,7 +283,6 @@ Shader "Unlit/RaytracerFinal"
 				rec.index = i;
 			}
 		}
-
 		return hit_anything;
 	}
 
@@ -220,7 +305,8 @@ Shader "Unlit/RaytracerFinal"
 		{
 			return vec3(0.0, 0.0, 0.0);
 		}
-		else {
+		else 
+		{
 			vec3 unit_direction = normalize(r.direction);
 			float t = 0.5 * (unit_direction.y + 1.0);
 			return accumColor * (lerp(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), t));
@@ -230,17 +316,12 @@ Shader "Unlit/RaytracerFinal"
 	/////////////////////////////////////////////////////////////////////////////////////
 	fixed4 frag(v2f i) : SV_Target
 	{
-		vec3 lower_left_corner = {-2, -1, -1};
-		vec3 horizontal = {4, 0, 0};
-		vec3 vertical = {0, 2, 0};
-		vec3 origin = {0, 0, 0};
-
 		float u = i.uv.x;
 		float v = i.uv.y;
 		uv = float2(u, v);
 
-		col3 col = col3(0.0,0.0,0.0);
-		camera cam = camera::from();
+		col3 col = col3(0.0, 0.0, 0.0);
+		camera cam = camera::from(_camera_position, _camera_look_at, vec3(0,1,0), 45, 4.0 / 2.0);
 
 		for (uint i = 0; i < _rays_per_pixel; i++) {
 			ray r = cam.getRay(u, v);
@@ -250,8 +331,8 @@ Shader "Unlit/RaytracerFinal"
 		col = sqrt(col); // gamma correction
 		return fixed4(col,1);
 	}
-		////////////////////////////////////////////////////////////////////////////////////
-		ENDCG
-	} }}
+	////////////////////////////////////////////////////////////////////////////////////
+	ENDCG
+}}}
 
 
