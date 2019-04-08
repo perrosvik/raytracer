@@ -9,18 +9,18 @@
 // https://docs.unity3d.com/Manual/SL-ShaderPrograms.html
 
 
-Shader "Unlit/Raytracer10"
+Shader "Unlit/RaytracerFinal"
 {
 	Properties
 	{
-		_rays_per_pixel("Rays per Pixel", Range(0, 50)) = 0
-		_max_bounce("Max bounces", Range(0, 50)) = 0
-		_camera_position("Camera position", Vector) = (0, 0, 0)
+		_rays_per_pixel("Rays per Pixel", Range(0, 50)) = 20
+		_max_bounce("Max bounces", Range(0, 50)) = 20
+		_camera_position("Camera position", Vector) = (1, 1, 1)
 		_camera_look_at("Camera look at", Vector) = (0, 0, 0)
 		_sphere_position_x("Sphere position, x axis", Range(-10, 10)) = 0
 		[Toggle] _sphere_material("Toggle diffuse or glass", Range(0, 1)) = 0
 		_sphere_refraction_index("Refraction index", Range(0, 10)) = 1
-		_sphere_color("Color", Color) = (0, 0, 0) 
+		_sphere_color("Color", Color) = (150, 150, 150) 
 	}
 	SubShader{ Pass	{
 	CGPROGRAM

@@ -76,12 +76,18 @@ Material:
     - _bl: 2
     - _boolchooser: 0
     - _floatchooser: 0.34
-    - _max_bounce: 1
-    - _rays_per_pixel: 1
+    - _max_bounce: 30
+    - _rays_per_pixel: 30
+    - _sphere_material: 0
+    - _sphere_position_x: -0
+    - _sphere_refraction_index: 9.97
     - bl: 2
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Cowlor: {r: 1, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _camera_look_at: {r: -0.62, g: -0.36, b: -1.85, a: 1}
+    - _camera_position: {r: 1.44, g: 1.39, b: 2.16, a: 1}
     - _colorchooser: {r: 1, g: 0, b: 0, a: 1}
+    - _sphere_color: {r: 1, g: 0, b: 0, a: 1}
     - _vec4chooser: {r: 0, g: 0, b: 0, a: 0}
